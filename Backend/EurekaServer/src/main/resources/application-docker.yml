@@ -1,12 +1,11 @@
 server:
-  port: 8761
+  port: ${PORT:8761}
 
 spring:
   application:
     name: eureka-server
   config:
-    import: optional:configserver:http://config-server:8888
-
+    import: optional:configserver:https://config-server-0ycu.onrender.com
 eureka:
   instance:
     hostname: eureka-server
