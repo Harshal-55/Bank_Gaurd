@@ -1,0 +1,126 @@
+services:
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - bankguard-network
+
+  config-server:
+    container_name: config-server
+    build:
+      context: ./Backend/ConfigServer
+    ports:
+      - "8888:8888"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    networks:
+      - bankguard-network
+
+  eureka-server:
+    container_name: eureka-server
+    build:
+      context: ./Backend/EurekaServer
+    ports:
+      - "8761:8761"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      - config-server
+    networks:
+      - bankguard-network
+
+  api-gateway:
+    container_name: api-gateway
+    build:
+      context: ./Backend/apiGateway
+    ports:
+      - "1001:1001"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      - config-server
+      - eureka-server
+      - mysql
+    networks:
+      - bankguard-network
+
+  transaction-service:
+    container_name: transaction-service
+    build:
+      context: ./Backend/transactionService
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      - config-server
+      - eureka-server
+      - mysql
+    networks:
+      - bankguard-network
+
+  alert-case-service:
+    container_name: alert-case-service
+    build:
+      context: ./Backend/AlertCaseService
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      BREVO_API_KEY: YOUR_BREVO_API_KEY
+    depends_on:
+      - config-server
+      - eureka-server
+      - mysql
+    networks:
+      - bankguard-network
+
+  decision-engine-service:
+    container_name: decision-engine-service
+    build:
+      context: ./Backend/Decision_Engine_service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      GOOGLE_API_KEY: YOUR_GOOGLE_API_KEY
+    depends_on:
+      - config-server
+      - eureka-server
+      - mysql
+    networks:
+      - bankguard-network
+
+  enrichment-service:
+    container_name: enrichment-service
+    build:
+      context: ./Backend/enrichmentService
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      - config-server
+      - eureka-server
+    networks:
+      - bankguard-network
+
+  sar-report-service:
+    container_name: sar-report-service
+    build:
+      context: ./Backend/sarReport
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      - config-server
+      - eureka-server
+      - mysql
+    networks:
+      - bankguard-network
+
+volumes:
+  mysql_data:
+
+networks:
+  bankguard-network:
+    driver: bridge

@@ -1,0 +1,34 @@
+spring:
+  application:
+    name: alert-case-service
+
+  config:
+    import: configserver:http://config-server:8888
+
+  cloud:
+    config:
+      profile: dev
+      fail-fast: true
+
+server:
+  port: 8085
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka-server:8761/eureka/
+    fetch-registry: true
+    register-with-eureka: true
+
+  instance:
+    prefer-ip-address: true
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+brevo:
+  api-key: ${BREVO_API_KEY}
+  from: ${BREVO_FROM:bunnypraveen70@gmail.com}
+  from-name: ${BREVO_FROM_NAME:BankGuard}
+  api-url: ${BREVO_API_URL:https://api.brevo.com/v3/smtp/email}

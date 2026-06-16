@@ -1,0 +1,18 @@
+server:
+  port: 8888
+
+spring:
+  application:
+    name: config-server
+
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://github.com/Harshal-55/Config-Server_Bankguard.git
+          skip-ssl-validation: true
+          default-label: main
+          clone-on-start: true
+          search-paths: /
+          timeout: 60
+          refresh-rate: 0
