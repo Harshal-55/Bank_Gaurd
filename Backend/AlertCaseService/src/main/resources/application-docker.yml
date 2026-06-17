@@ -3,7 +3,7 @@ spring:
     name: alert-case-service
 
   config:
-    import: configserver:http://config-server:8888
+    import: configserver:https://config-server-7jdt.onrender.com
 
   cloud:
     config:
@@ -11,12 +11,12 @@ spring:
       fail-fast: true
 
 server:
-  port: 8085
+  port: ${PORT:8085}
 
 eureka:
   client:
     service-url:
-      defaultZone: http://eureka-server:8761/eureka/
+      defaultZone: https://eureka-server-ku09.onrender.com/eureka/
     fetch-registry: true
     register-with-eureka: true
 
