@@ -2,8 +2,12 @@ FROM eclipse-temurin:17-jdk
 
 WORKDIR /app
 
-COPY target/*.jar app.jar
+COPY . .
 
-EXPOSE 1001
+RUN chmod +x mvnw
 
-ENTRYPOINT ["java","-jar","app.jar"]
+RUN ./mvnw clean package -DskipTests
+
+EXPOSE 8761
+
+CMD sh -c "java -jar target/*.jar"
