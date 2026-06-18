@@ -38,7 +38,7 @@ public class SecurityConfig {
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
                 .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
-                .cors(cors -> cors.disable())
+                .cors(cors -> {})  // Enable default CORS handling from Config Server YAML
 
                 .exceptionHandling(eh ->
                         eh.authenticationEntryPoint((exchange, e) -> {
