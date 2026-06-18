@@ -43,7 +43,7 @@ public class SecurityConfig {
         config.setAllowedOriginPatterns(List.of(
                 "http://localhost:*",
                 "https://bank-gaurd-frontend.vercel.app",
-                "https://customer-frontend.vercel.app" // replace with actual URL later
+                "https://bank-gaurd-customer.vercel.app" // replace with actual URL later
         ));
 
         config.setAllowedMethods(List.of(
@@ -107,15 +107,10 @@ public class SecurityConfig {
                         // TRANSACTION APIs
                         // =================================================
                         .pathMatchers(HttpMethod.GET, "/api/transactions/**")
-                        .hasAnyRole(
-                                "SUPER_ADMIN",
-                                "FRAUD_ANALYST",
-                                "RISK_MANAGER",
-                                "CUSTOMER"
-                        )
+                        .permitAll()
 
                         .pathMatchers(HttpMethod.POST, "/api/transactions/**")
-                        .hasRole("SUPER_ADMIN")
+                        .permitAll()
 
                         .pathMatchers(HttpMethod.PUT, "/api/transactions/**")
                         .hasRole("SUPER_ADMIN")
