@@ -3,6 +3,7 @@ package com.cts.apiGateway.security;
 import java.util.List;
 
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -24,19 +25,24 @@ public class JwtAuthenticationFilter implements WebFilter {
     }
 
     @Override
-    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+    public Mono<Void> filter(ServerWebExchange exchange,
+                             WebFilterChain chain) {
 
         ServerHttpRequest request = exchange.getRequest();
+
         String path = request.getPath().value();
+
+        // OPTIONS request
+        if (request.getMethod() == HttpMethod.OPTIONS) {
+            return chain.filter(exchange);
+        }
 
         // Public endpoints
         if (
-                path.equals("/auth/login")
-                        || path.equals("/auth/register")
-                        || path.equals("/auth/admin/create-superadmin")
-                        || path.startsWith("/api/customers")
-                        || (path.startsWith("/api/transactions")
-                            && request.getMethod().name().equals("POST"))
+                path.startsWith("/api/customers")
+                        || path.startsWith("/auth/login")
+                        || path.startsWith("/auth/register")
+                        || path.startsWith("/auth/admin/create-superadmin")
         ) {
             return chain.filter(exchange);
         }
@@ -44,7 +50,6 @@ public class JwtAuthenticationFilter implements WebFilter {
         String authHeader =
                 request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
 
-        // No token → continue
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             return chain.filter(exchange);
         }
@@ -58,27 +63,22 @@ public class JwtAuthenticationFilter implements WebFilter {
                 String username = jwtUtil.extractUsername(token);
                 String role = jwtUtil.extractRole(token);
 
-                List<SimpleGrantedAuthority> authorities =
-                        List.of(
-                                new SimpleGrantedAuthority("ROLE_" + role)
-                        );
-
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(
                                 username,
                                 null,
-                                authorities
-                        );
+                                List.of(
+                                        new SimpleGrantedAuthority(
+                                                "ROLE_" + role)));
 
                 return chain.filter(exchange)
                         .contextWrite(
                                 ReactiveSecurityContextHolder
-                                        .withAuthentication(authentication)
-                        );
+                                        .withAuthentication(authentication));
             }
 
         } catch (Exception e) {
-            // Ignore invalid token and continue
+
         }
 
         return chain.filter(exchange);

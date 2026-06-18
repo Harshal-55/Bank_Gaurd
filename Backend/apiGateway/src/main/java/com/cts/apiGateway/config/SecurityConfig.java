@@ -1,7 +1,5 @@
 package com.cts.apiGateway.config;
 
-import java.util.List;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -12,9 +10,6 @@ import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.reactive.CorsConfigurationSource;
-import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
 import com.cts.apiGateway.security.JwtAuthenticationFilter;
 
@@ -36,38 +31,6 @@ public class SecurityConfig {
     }
 
     @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-
-        CorsConfiguration config = new CorsConfiguration();
-
-        config.setAllowedOriginPatterns(List.of(
-                "http://localhost:*",
-                "https://bank-gaurd-frontend.vercel.app",
-                "https://bank-gaurd-customer.vercel.app" // replace with actual URL later
-        ));
-
-        config.setAllowedMethods(List.of(
-                "GET",
-                "POST",
-                "PUT",
-                "DELETE",
-                "PATCH",
-                "OPTIONS"
-        ));
-
-        config.setAllowedHeaders(List.of("*"));
-        config.setAllowCredentials(true);
-        config.setMaxAge(3600L);
-
-        UrlBasedCorsConfigurationSource source =
-                new UrlBasedCorsConfigurationSource();
-
-        source.registerCorsConfiguration("/**", config);
-
-        return source;
-    }
-
-    @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
 
         return http
@@ -75,109 +38,99 @@ public class SecurityConfig {
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
                 .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .cors(cors -> {})
 
-                .exceptionHandling(eh -> eh.authenticationEntryPoint((swe, e) -> {
-                    swe.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-                    return Mono.empty();
-                }))
+                .exceptionHandling(eh ->
+                        eh.authenticationEntryPoint((exchange, e) -> {
+                            exchange.getResponse()
+                                    .setStatusCode(HttpStatus.UNAUTHORIZED);
+                            return Mono.empty();
+                        }))
 
                 .authorizeExchange(exchange -> exchange
 
-                        // =================================================
-                        // AUTH APIs
-                        // =================================================
-                        .pathMatchers(HttpMethod.POST, "/auth/login").permitAll()
-                        .pathMatchers(HttpMethod.POST, "/auth/register").permitAll()
-                        .pathMatchers(HttpMethod.POST, "/auth/admin/create-superadmin").permitAll()
+                        // Allow all preflight requests
+                        .pathMatchers(HttpMethod.OPTIONS, "/**")
+                        .permitAll()
 
-                        // =================================================
-                        // CUSTOMER APIs
-                        // Entire customer module is public
-                        // =================================================
-                        .pathMatchers(HttpMethod.POST, "/api/customers").permitAll()
-                        .pathMatchers(HttpMethod.POST, "/api/customers/login").permitAll()
-                        .pathMatchers(HttpMethod.GET, "/api/customers/**").permitAll()
+                        // Public auth APIs
+                        .pathMatchers(HttpMethod.POST, "/auth/login")
+                        .permitAll()
 
-                        // =================================================
-                        // USER MANAGEMENT
-                        // =================================================
-                        .pathMatchers("/auth/users/**")
+                        .pathMatchers(HttpMethod.POST, "/auth/register")
+                        .permitAll()
+
+                        .pathMatchers(HttpMethod.POST,
+                                "/auth/admin/create-superadmin")
+                        .permitAll()
+
+                        // Customer APIs
+                        .pathMatchers("/api/customers/**")
+                        .permitAll()
+
+                        // Transactions
+                        .pathMatchers(HttpMethod.GET,
+                                "/api/transactions/**")
+                        .permitAll()
+
+                        .pathMatchers(HttpMethod.POST,
+                                "/api/transactions/**")
+                        .permitAll()
+
+                        .pathMatchers(HttpMethod.PUT,
+                                "/api/transactions/**")
                         .hasRole("SUPER_ADMIN")
 
-                        // =================================================
-                        // TRANSACTION APIs
-                        // =================================================
-                        .pathMatchers(HttpMethod.GET, "/api/transactions/**").permitAll()
-
-                        .pathMatchers(HttpMethod.POST, "/api/transactions/**").permitAll()
-
-                        .pathMatchers(HttpMethod.PUT, "/api/transactions/**")
+                        .pathMatchers(HttpMethod.DELETE,
+                                "/api/transactions/**")
                         .hasRole("SUPER_ADMIN")
 
-                        .pathMatchers(HttpMethod.DELETE, "/api/transactions/**")
-                        .hasRole("SUPER_ADMIN")
-
-                        // =================================================
-                        // ALERT CASE SERVICE
-                        // =================================================
-                        .pathMatchers(HttpMethod.GET, "/api/investigation/**")
+                        // Investigation
+                        .pathMatchers(HttpMethod.GET,
+                                "/api/investigation/**")
                         .hasAnyRole(
                                 "SUPER_ADMIN",
-                                "FRAUD_ANALYST"
-                        )
+                                "FRAUD_ANALYST")
 
                         .pathMatchers(HttpMethod.PUT,
                                 "/api/investigation/cases/*/status")
                         .hasAnyRole(
                                 "SUPER_ADMIN",
-                                "FRAUD_ANALYST"
-                        )
+                                "FRAUD_ANALYST")
 
-                        .pathMatchers(HttpMethod.POST, "/api/investigation/**")
+                        .pathMatchers(HttpMethod.POST,
+                                "/api/investigation/**")
                         .hasRole("SUPER_ADMIN")
 
-                        // =================================================
-                        // SAR REPORTS
-                        // =================================================
-                        .pathMatchers(HttpMethod.GET, "/sar/**")
+                        // SAR
+                        .pathMatchers(HttpMethod.GET,
+                                "/sar/**")
                         .hasAnyRole(
                                 "SUPER_ADMIN",
-                                "FRAUD_ANALYST"
-                        )
+                                "FRAUD_ANALYST")
 
-                        .pathMatchers(HttpMethod.POST, "/sar/**")
+                        .pathMatchers(HttpMethod.POST,
+                                "/sar/**")
                         .hasRole("SUPER_ADMIN")
 
-                        // =================================================
-                        // ENRICHMENT SERVICE
-                        // =================================================
+                        // Enrichment
                         .pathMatchers("/api/enrich/**")
                         .hasAnyRole(
                                 "SUPER_ADMIN",
-                                "RISK_MANAGER"
-                        )
+                                "RISK_MANAGER")
 
-                        // =================================================
-                        // DECISION ENGINE
-                        // =================================================
+                        // Gemini
                         .pathMatchers("/api/gemini/**")
                         .hasAnyRole(
                                 "SUPER_ADMIN",
-                                "RISK_MANAGER"
-                        )
+                                "RISK_MANAGER")
 
-                        // =================================================
-                        // EVERYTHING ELSE
-                        // =================================================
-                        .anyExchange().authenticated()
-
-                )
+                        .anyExchange()
+                        .authenticated())
 
                 .addFilterAt(
                         jwtAuthenticationFilter,
-                        SecurityWebFiltersOrder.AUTHENTICATION
-                )
+                        SecurityWebFiltersOrder.AUTHENTICATION)
 
                 .build();
     }
