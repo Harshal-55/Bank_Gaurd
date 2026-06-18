@@ -37,11 +37,13 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+
         CorsConfiguration config = new CorsConfiguration();
 
         config.setAllowedOriginPatterns(List.of(
                 "http://localhost:*",
-                "https://bank-gaurd-frontend.vercel.app"
+                "https://bank-gaurd-frontend.vercel.app",
+                "https://customer-frontend.vercel.app" // replace with actual URL later
         ));
 
         config.setAllowedMethods(List.of(
@@ -67,110 +69,121 @@ public class SecurityConfig {
 
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
+
         return http
+
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
                 .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                // Send a plain 401 (no WWW-Authenticate: Basic header) so browsers
-                // don't pop the native sign-in dialog when a JWT is missing/invalid.
+
                 .exceptionHandling(eh -> eh.authenticationEntryPoint((swe, e) -> {
                     swe.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
                     return Mono.empty();
                 }))
+
                 .authorizeExchange(exchange -> exchange
 
-                        // =============================================
-                        // PUBLIC ENDPOINTS (no authentication required)
-                        // =============================================
+                        // =================================================
+                        // AUTH APIs
+                        // =================================================
                         .pathMatchers(HttpMethod.POST, "/auth/login").permitAll()
                         .pathMatchers(HttpMethod.POST, "/auth/register").permitAll()
                         .pathMatchers(HttpMethod.POST, "/auth/admin/create-superadmin").permitAll()
 
-                        // =============================================
-                        // USER MANAGEMENT (SuperAdmin only)
-                        // =============================================
-                        .pathMatchers("/auth/users/**").hasRole("SUPER_ADMIN")
+                        // =================================================
+                        // CUSTOMER APIs
+                        // Entire customer module is public
+                        // =================================================
+                        .pathMatchers("/api/customers/**").permitAll()
 
-                        // =============================================
-                        // TRANSACTION SERVICE (/api/transactions/**)
-                        // - Super Admin: full CRUD
-                        // - Fraud Analyst: read-only (reviews transactions)
-                        // - Risk Manager: read-only (reviews trends)
-                        // =============================================
+                        // =================================================
+                        // USER MANAGEMENT
+                        // =================================================
+                        .pathMatchers("/auth/users/**")
+                        .hasRole("SUPER_ADMIN")
+
+                        // =================================================
+                        // TRANSACTION APIs
+                        // =================================================
                         .pathMatchers(HttpMethod.GET, "/api/transactions/**")
-                            .hasAnyRole("SUPER_ADMIN", "FRAUD_ANALYST", "RISK_MANAGER", "CUSTOMER")
+                        .hasAnyRole(
+                                "SUPER_ADMIN",
+                                "FRAUD_ANALYST",
+                                "RISK_MANAGER",
+                                "CUSTOMER"
+                        )
+
                         .pathMatchers(HttpMethod.POST, "/api/transactions/**")
-                            .hasRole("SUPER_ADMIN")
+                        .hasRole("SUPER_ADMIN")
+
                         .pathMatchers(HttpMethod.PUT, "/api/transactions/**")
-                            .hasRole("SUPER_ADMIN")
+                        .hasRole("SUPER_ADMIN")
+
                         .pathMatchers(HttpMethod.DELETE, "/api/transactions/**")
-                            .hasRole("SUPER_ADMIN")
+                        .hasRole("SUPER_ADMIN")
 
-                        // =============================================
-                        // CUSTOMER SERVICE (/api/customers/**)
-                        // - Super Admin: full CRUD
-                        // - Fraud Analyst: read-only (view customer info during investigation)
-                        // - Risk Manager: read-only (view customer risk profiles)
-                        // =============================================
-                        .pathMatchers(HttpMethod.GET, "/api/customers/**")
-                            .hasAnyRole("SUPER_ADMIN", "FRAUD_ANALYST", "RISK_MANAGER", "CUSTOMER")
-                        .pathMatchers(HttpMethod.POST, "/api/customers/**")
-                            .hasRole("SUPER_ADMIN")
-                        .pathMatchers(HttpMethod.PUT, "/api/customers/**")
-                            .hasRole("SUPER_ADMIN")
-                        .pathMatchers(HttpMethod.DELETE, "/api/customers/**")
-                            .hasRole("SUPER_ADMIN")
-
-                        // =============================================
-                        // ALERT & CASE INVESTIGATION (/api/investigation/**)
-                        // - Super Admin: full access
-                        // - Fraud Analyst: read alerts, view cases, update case status
-                        // - Risk Manager: no access
-                        // =============================================
+                        // =================================================
+                        // ALERT CASE SERVICE
+                        // =================================================
                         .pathMatchers(HttpMethod.GET, "/api/investigation/**")
-                            .hasAnyRole("SUPER_ADMIN", "FRAUD_ANALYST")
-                        .pathMatchers(HttpMethod.PUT, "/api/investigation/cases/*/status")
-                            .hasAnyRole("SUPER_ADMIN", "FRAUD_ANALYST")
+                        .hasAnyRole(
+                                "SUPER_ADMIN",
+                                "FRAUD_ANALYST"
+                        )
+
+                        .pathMatchers(HttpMethod.PUT,
+                                "/api/investigation/cases/*/status")
+                        .hasAnyRole(
+                                "SUPER_ADMIN",
+                                "FRAUD_ANALYST"
+                        )
+
                         .pathMatchers(HttpMethod.POST, "/api/investigation/**")
-                            .hasRole("SUPER_ADMIN")
+                        .hasRole("SUPER_ADMIN")
 
-                        // =============================================
-                        // SAR REPORTS (/sar/**)
-                        // - Super Admin: full access
-                        // - Fraud Analyst: read-only (reviews SAR reports)
-                        // - Risk Manager: no access
-                        // =============================================
+                        // =================================================
+                        // SAR REPORTS
+                        // =================================================
                         .pathMatchers(HttpMethod.GET, "/sar/**")
-                            .hasAnyRole("SUPER_ADMIN", "FRAUD_ANALYST")
+                        .hasAnyRole(
+                                "SUPER_ADMIN",
+                                "FRAUD_ANALYST"
+                        )
+
                         .pathMatchers(HttpMethod.POST, "/sar/**")
-                            .hasRole("SUPER_ADMIN")
+                        .hasRole("SUPER_ADMIN")
 
-                        // =============================================
-                        // ENRICHMENT SERVICE (/api/enrich/**)
-                        // - Super Admin: full access
-                        // - Risk Manager: defines rules, thresholds, risk policies
-                        // - Fraud Analyst: no access
-                        // =============================================
+                        // =================================================
+                        // ENRICHMENT SERVICE
+                        // =================================================
                         .pathMatchers("/api/enrich/**")
-                            .hasAnyRole("SUPER_ADMIN", "RISK_MANAGER")
+                        .hasAnyRole(
+                                "SUPER_ADMIN",
+                                "RISK_MANAGER"
+                        )
 
-                        // =============================================
-                        // DECISION ENGINE / GEMINI (/api/gemini/**)
-                        // - Super Admin: full access
-                        // - Risk Manager: defines detection rules & risk policies
-                        // - Fraud Analyst: no access
-                        // =============================================
+                        // =================================================
+                        // DECISION ENGINE
+                        // =================================================
                         .pathMatchers("/api/gemini/**")
-                            .hasAnyRole("SUPER_ADMIN", "RISK_MANAGER")
+                        .hasAnyRole(
+                                "SUPER_ADMIN",
+                                "RISK_MANAGER"
+                        )
 
-                        // =============================================
-                        // ALL OTHER ENDPOINTS - must be authenticated
-                        // =============================================
+                        // =================================================
+                        // EVERYTHING ELSE
+                        // =================================================
                         .anyExchange().authenticated()
+
                 )
-                // Add JWT filter before the authentication filter
-                .addFilterAt(jwtAuthenticationFilter, SecurityWebFiltersOrder.AUTHENTICATION)
+
+                .addFilterAt(
+                        jwtAuthenticationFilter,
+                        SecurityWebFiltersOrder.AUTHENTICATION
+                )
+
                 .build();
     }
 }

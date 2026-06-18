@@ -3,7 +3,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 const AuthContext = createContext(null);
 
 const STORAGE_KEY = "vaultx_customer";
-const API_BASE = "http://localhost:8089/api/customers";
+const API_BASE = `${import.meta.env.VITE_API_BASE_URL}/api/customers`;
 
 export function AuthProvider({ children }) {
   const [customer, setCustomer] = useState(() => {
