@@ -4,7 +4,8 @@ import { API_BASE_URL, STORAGE_KEYS } from '../utils/constants.jsx';
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 30000
+  timeout: 30000,
+  withCredentials: true  // Enable credentials for CORS with authentication
 });
 
 // Attach JWT to every outgoing request

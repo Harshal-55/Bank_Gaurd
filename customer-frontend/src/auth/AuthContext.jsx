@@ -25,6 +25,7 @@ export function AuthProvider({ children }) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
+      credentials: "include",  // Enable credentials for CORS
     });
     if (res.status === 401) throw new Error("Invalid email or password.");
     if (!res.ok) throw new Error(`Login failed (${res.status})`);
@@ -38,6 +39,7 @@ export function AuthProvider({ children }) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
+      credentials: "include",  // Enable credentials for CORS
     });
     if (!res.ok) {
       let message = `Signup failed (${res.status})`;
