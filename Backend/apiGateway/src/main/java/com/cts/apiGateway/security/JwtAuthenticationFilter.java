@@ -3,7 +3,6 @@ package com.cts.apiGateway.security;
 import java.util.List;
 
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -26,46 +25,62 @@ public class JwtAuthenticationFilter implements WebFilter {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getPath().value();
 
-        // Skip JWT parsing only for the truly public auth endpoints.
-        // /auth/users/** is admin-only and must go through the JWT check below.
-        if (path.equals("/auth/login") || path.equals("/auth/register") || path.equals("/auth/admin/create-superadmin")) {
+        // Public endpoints
+        if (
+                path.equals("/auth/login")
+                        || path.equals("/auth/register")
+                        || path.equals("/auth/admin/create-superadmin")
+                        || path.startsWith("/api/customers")
+                        || (path.startsWith("/api/transactions")
+                            && request.getMethod().name().equals("POST"))
+        ) {
             return chain.filter(exchange);
         }
 
-        String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+        String authHeader =
+                request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
 
-        // No Authorization header present
+        // No token → continue
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-            return exchange.getResponse().setComplete();
+            return chain.filter(exchange);
         }
 
         String token = authHeader.substring(7);
 
         try {
+
             if (jwtUtil.isTokenValid(token)) {
+
                 String username = jwtUtil.extractUsername(token);
                 String role = jwtUtil.extractRole(token);
 
-                // Create authorities with ROLE_ prefix for Spring Security
-                List<SimpleGrantedAuthority> authorities = List.of(
-                        new SimpleGrantedAuthority("ROLE_" + role)
-                );
+                List<SimpleGrantedAuthority> authorities =
+                        List.of(
+                                new SimpleGrantedAuthority("ROLE_" + role)
+                        );
 
                 UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(username, null, authorities);
+                        new UsernamePasswordAuthenticationToken(
+                                username,
+                                null,
+                                authorities
+                        );
 
                 return chain.filter(exchange)
-                        .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication));
+                        .contextWrite(
+                                ReactiveSecurityContextHolder
+                                        .withAuthentication(authentication)
+                        );
             }
+
         } catch (Exception e) {
-            // Token parsing or validation failed — fall through to UNAUTHORIZED
+            // Ignore invalid token and continue
         }
 
-        exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-        return exchange.getResponse().setComplete();
+        return chain.filter(exchange);
     }
 }

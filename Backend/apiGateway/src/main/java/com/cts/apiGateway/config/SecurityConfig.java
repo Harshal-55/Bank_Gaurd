@@ -95,7 +95,9 @@ public class SecurityConfig {
                         // CUSTOMER APIs
                         // Entire customer module is public
                         // =================================================
-                        .pathMatchers("/api/customers/**").permitAll()
+                        .pathMatchers(HttpMethod.POST, "/api/customers").permitAll()
+                        .pathMatchers(HttpMethod.POST, "/api/customers/login").permitAll()
+                        .pathMatchers(HttpMethod.GET, "/api/customers/**").permitAll()
 
                         // =================================================
                         // USER MANAGEMENT
@@ -106,11 +108,9 @@ public class SecurityConfig {
                         // =================================================
                         // TRANSACTION APIs
                         // =================================================
-                        .pathMatchers(HttpMethod.GET, "/api/transactions/**")
-                        .permitAll()
+                        .pathMatchers(HttpMethod.GET, "/api/transactions/**").permitAll()
 
-                        .pathMatchers(HttpMethod.POST, "/api/transactions/**")
-                        .permitAll()
+                        .pathMatchers(HttpMethod.POST, "/api/transactions/**").permitAll()
 
                         .pathMatchers(HttpMethod.PUT, "/api/transactions/**")
                         .hasRole("SUPER_ADMIN")
