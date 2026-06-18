@@ -16,7 +16,7 @@ export default function ProfilePage({ customerId }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`http://localhost:8089/api/customers/${effectiveId}`);
+      const res = await fetch(`http://`${import.meta.env.VITE_API_BASE_URL}/api/...`/api/customers/${effectiveId}`);
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
       const data = await res.json();
       setProfile(data);

@@ -66,7 +66,7 @@ export default function PayPage() {
         customerId: customerId || 1,
       };
 
-      const res = await fetch("http://localhost:8089/api/transactions", {
+      const res = await fetch("http://`${import.meta.env.VITE_API_BASE_URL}/api/...`/api/transactions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
