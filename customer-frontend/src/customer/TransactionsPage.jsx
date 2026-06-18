@@ -23,8 +23,8 @@ export default function TransactionsPage({ customerId }) {
     setError(null);
     try {
       const url = customerId
-        ? `http://`${import.meta.env.VITE_API_BASE_URL}/api/...`/api/transactions/customer/${customerId}`
-        : "http://`${import.meta.env.VITE_API_BASE_URL}/api/...`/api/transactions";
+  ? `${import.meta.env.VITE_API_BASE_URL}/api/transactions/customer/${customerId}`
+  : `${import.meta.env.VITE_API_BASE_URL}/api/transactions`;
       const res = await fetch(url);
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
       const data = await res.json();

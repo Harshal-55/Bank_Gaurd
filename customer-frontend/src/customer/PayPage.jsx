@@ -66,11 +66,16 @@ export default function PayPage() {
         customerId: customerId || 1,
       };
 
-      const res = await fetch("http://`${import.meta.env.VITE_API_BASE_URL}/api/...`/api/transactions", {
+      const res = await fetch(
+      `${import.meta.env.VITE_API_BASE_URL}/api/transactions`,
+      {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(payload),
-      });
+      }
+    );
       const data = await res.json();
 
       if (data.status === "ERROR") {

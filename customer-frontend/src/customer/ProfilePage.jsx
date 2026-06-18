@@ -16,11 +16,16 @@ export default function ProfilePage({ customerId }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`http://`${import.meta.env.VITE_API_BASE_URL}/api/...`/api/customers/${effectiveId}`);
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      const data = await res.json();
-      setProfile(data);
-    } catch (err) {
+    const res = await fetch(
+      `${import.meta.env.VITE_API_BASE_URL}/api/customers/${effectiveId}`
+    );
+
+    if (!res.ok)
+      throw new Error(`Server error: ${res.status}`);
+
+    const data = await res.json();
+    setProfile(data);
+  } catch (err) {
       setError(err.message || "Failed to load profile.");
     } finally {
       setLoading(false);
