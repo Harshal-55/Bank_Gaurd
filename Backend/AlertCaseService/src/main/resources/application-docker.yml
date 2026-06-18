@@ -8,7 +8,7 @@ spring:
   cloud:
     config:
       profile: dev
-      fail-fast: false
+      fail-fast: true
 
 server:
   port: ${PORT:8085}
