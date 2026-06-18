@@ -53,6 +53,13 @@ public class SecurityConfig {
                         .pathMatchers(HttpMethod.OPTIONS, "/**")
                         .permitAll()
 
+                        // Health and actuator endpoints
+                        .pathMatchers("/actuator/**")
+                        .permitAll()
+
+                        .pathMatchers("/health")
+                        .permitAll()
+
                         // Public auth APIs
                         .pathMatchers(HttpMethod.POST, "/auth/login")
                         .permitAll()
@@ -64,7 +71,7 @@ public class SecurityConfig {
                                 "/auth/admin/create-superadmin")
                         .permitAll()
 
-                        // Customer APIs
+                        // Customer APIs - no JWT required for signup/login
                         .pathMatchers("/api/customers/**")
                         .permitAll()
 
