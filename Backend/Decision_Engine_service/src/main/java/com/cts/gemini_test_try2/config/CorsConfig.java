@@ -21,7 +21,7 @@ public class CorsConfig {
         
         // Production deployments
         config.addAllowedOrigin("https://bank-gaurd-frontend.vercel.app");  // admin frontend
-        config.addAllowedOrigin("https://bank-gaurd-customer.vercel.app");  // customer frontend
+        config.addAllowedOrigin("https://bank-gaurd-customer-frontend.vercel.app");  // customer frontend
         
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");

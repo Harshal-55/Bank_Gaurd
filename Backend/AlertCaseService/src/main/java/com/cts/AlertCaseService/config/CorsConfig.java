@@ -17,7 +17,7 @@ public class CorsConfig {
         config.addAllowedOrigin("http://localhost:5173");  // analyst/risk-manager dev server
         config.addAllowedOrigin("http://localhost:5174");  // legacy / other React dev server
         config.addAllowedOrigin("https://bank-gaurd-frontend.vercel.app");  // admin frontend production
-        config.addAllowedOrigin("https://bank-gaurd-customer.vercel.app");  // customer frontend production
+        config.addAllowedOrigin("https://bank-gaurd-customer-frontend.vercel.app");  // customer frontend production
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
         config.setMaxAge(3600L);
