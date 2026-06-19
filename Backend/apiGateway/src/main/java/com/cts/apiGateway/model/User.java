@@ -28,4 +28,23 @@ public class User {
     // SUPER_ADMIN rows are seeded as approved.
     @Column("is_approved")
     private Boolean isApproved;
+
+    // Customer-specific fields
+    @Column("email")
+    private String email;
+
+    @Column("bank_name")
+    private String bankName;
+
+    @Column("account_no")
+    private String accountNo;
+
+    @Column("account_type")
+    private String accountType;
+
+    @Column("balance")
+    private Double balance;
+
+    @Column("risk_score")
+    private Double riskScore;
 }

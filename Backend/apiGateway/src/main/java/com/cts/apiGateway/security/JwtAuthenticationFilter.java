@@ -42,6 +42,8 @@ public class JwtAuthenticationFilter implements WebFilter {
                 path.startsWith("/api/customers")
                         || path.startsWith("/auth/login")
                         || path.startsWith("/auth/register")
+                        || path.startsWith("/auth/customer/login")
+                        || path.startsWith("/auth/customer/signup")
                         || path.startsWith("/auth/admin/create-superadmin")
         ) {
             return chain.filter(exchange);

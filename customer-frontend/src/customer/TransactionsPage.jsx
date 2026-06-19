@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { LoadingState, ErrorState } from "./ProfilePage";
+import { apiGet } from "../services/api";
 
 const STATUS_TONES = {
   completed:  { pill: "bg-emerald-500/10 text-emerald-300 border-emerald-500/30", label: "Completed" },
@@ -22,12 +23,10 @@ export default function TransactionsPage({ customerId }) {
     setLoading(true);
     setError(null);
     try {
-      const url = customerId
-  ? `${import.meta.env.VITE_API_BASE_URL}/api/transactions/customer/${customerId}`
-  : `${import.meta.env.VITE_API_BASE_URL}/api/transactions`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      const data = await res.json();
+      const endpoint = customerId
+        ? `/api/transactions/customer/${customerId}`
+        : `/api/transactions`;
+      const data = await apiGet(endpoint);
       setTransactions(Array.isArray(data) ? data : data.transactions || []);
     } catch (err) {
       setError(err.message || "Failed to load transactions.");

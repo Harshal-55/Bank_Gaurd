@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../auth/AuthContext";
+import { apiPost } from "../services/api";
 
 async function getPublicIP() {
   try {
@@ -22,7 +23,7 @@ async function getLocationFromIP(ip) {
 }
 
 export default function PayPage() {
-  const { customerId } = useAuth();
+  const { email, getToken } = useAuth();
 
   const [receiverAccount, setReceiverAccount] = useState("");
   const [amount, setAmount] = useState("");
@@ -63,20 +64,10 @@ export default function PayPage() {
         city, state,
         ipAddress: ip,
         receiverAccountNumber: receiverAccount.trim(),
-        customerId: customerId || 1,
+        customerEmail: email || "customer@bank.com",
       };
 
-      const res = await fetch(
-      `${import.meta.env.VITE_API_BASE_URL}/api/transactions`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      }
-    );
-      const data = await res.json();
+      const data = await apiPost(`/api/transactions/customer`, payload);
 
       if (data.status === "ERROR") {
         const msg = data.errorCode === "RECEIVER_NOT_FOUND"
@@ -90,11 +81,6 @@ export default function PayPage() {
       if (txnStatus && txnStatus.toLowerCase() === "terminated") {
         setErrorMsg("Transaction terminated. Check your email for details.");
         setStatus("error");
-        return;
-      }
-
-      if (!res.ok) {
-        setErrorMsg(`Server error: ${res.status}`); setStatus("error");
         return;
       }
 

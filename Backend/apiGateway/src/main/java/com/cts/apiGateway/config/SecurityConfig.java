@@ -20,9 +20,11 @@ import reactor.core.publisher.Mono;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CorsConfig corsConfig;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, CorsConfig corsConfig) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.corsConfig = corsConfig;
     }
 
     @Bean
@@ -67,70 +69,63 @@ public class SecurityConfig {
                         .pathMatchers(HttpMethod.POST, "/auth/register")
                         .permitAll()
 
-                        .pathMatchers(HttpMethod.POST,
-                                "/auth/admin/create-superadmin")
+                        .pathMatchers(HttpMethod.POST, "/auth/admin/create-superadmin")
                         .permitAll()
 
-                        // Customer APIs - no JWT required for signup/login
-                        .pathMatchers("/api/customers/**")
+                        // Customer public auth endpoints (no JWT required for signup/login)
+                        .pathMatchers(HttpMethod.POST, "/auth/customer/signup")
                         .permitAll()
 
-                        // Transactions
-                        .pathMatchers(HttpMethod.GET,
-                                "/api/transactions/**")
+                        .pathMatchers(HttpMethod.POST, "/auth/customer/login")
                         .permitAll()
 
-                        .pathMatchers(HttpMethod.POST,
-                                "/api/transactions/**")
-                        .permitAll()
+                        // Customer API endpoints - require JWT with CUSTOMER role
+                        .pathMatchers(HttpMethod.GET, "/api/customers/**")
+                        .hasRole("CUSTOMER")
 
-                        .pathMatchers(HttpMethod.PUT,
-                                "/api/transactions/**")
+                        .pathMatchers(HttpMethod.POST, "/api/customers/**")
+                        .hasRole("CUSTOMER")
+
+                        .pathMatchers(HttpMethod.PUT, "/api/customers/**")
+                        .hasRole("CUSTOMER")
+
+                        // Transactions - require CUSTOMER role for customer operations
+                        .pathMatchers(HttpMethod.GET, "/api/transactions/customer/**")
+                        .hasRole("CUSTOMER")
+
+                        .pathMatchers(HttpMethod.POST, "/api/transactions/customer/**")
+                        .hasRole("CUSTOMER")
+
+                        .pathMatchers(HttpMethod.PUT, "/api/transactions/**")
                         .hasRole("SUPER_ADMIN")
 
-                        .pathMatchers(HttpMethod.DELETE,
-                                "/api/transactions/**")
+                        .pathMatchers(HttpMethod.DELETE, "/api/transactions/**")
                         .hasRole("SUPER_ADMIN")
 
                         // Investigation
-                        .pathMatchers(HttpMethod.GET,
-                                "/api/investigation/**")
-                        .hasAnyRole(
-                                "SUPER_ADMIN",
-                                "FRAUD_ANALYST")
+                        .pathMatchers(HttpMethod.GET, "/api/investigation/**")
+                        .hasAnyRole("SUPER_ADMIN", "FRAUD_ANALYST")
 
-                        .pathMatchers(HttpMethod.PUT,
-                                "/api/investigation/cases/*/status")
-                        .hasAnyRole(
-                                "SUPER_ADMIN",
-                                "FRAUD_ANALYST")
+                        .pathMatchers(HttpMethod.PUT, "/api/investigation/cases/*/status")
+                        .hasAnyRole("SUPER_ADMIN", "FRAUD_ANALYST")
 
-                        .pathMatchers(HttpMethod.POST,
-                                "/api/investigation/**")
+                        .pathMatchers(HttpMethod.POST, "/api/investigation/**")
                         .hasRole("SUPER_ADMIN")
 
                         // SAR
-                        .pathMatchers(HttpMethod.GET,
-                                "/sar/**")
-                        .hasAnyRole(
-                                "SUPER_ADMIN",
-                                "FRAUD_ANALYST")
+                        .pathMatchers(HttpMethod.GET, "/sar/**")
+                        .hasAnyRole("SUPER_ADMIN", "FRAUD_ANALYST")
 
-                        .pathMatchers(HttpMethod.POST,
-                                "/sar/**")
+                        .pathMatchers(HttpMethod.POST, "/sar/**")
                         .hasRole("SUPER_ADMIN")
 
                         // Enrichment
                         .pathMatchers("/api/enrich/**")
-                        .hasAnyRole(
-                                "SUPER_ADMIN",
-                                "RISK_MANAGER")
+                        .hasAnyRole("SUPER_ADMIN", "RISK_MANAGER")
 
                         // Gemini
                         .pathMatchers("/api/gemini/**")
-                        .hasAnyRole(
-                                "SUPER_ADMIN",
-                                "RISK_MANAGER")
+                        .hasAnyRole("SUPER_ADMIN", "RISK_MANAGER")
 
                         .anyExchange()
                         .authenticated())

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiGet } from "../services/api";
 
 export default function ProfilePage({ customerId }) {
   const [profile, setProfile] = useState(null);
@@ -16,16 +17,9 @@ export default function ProfilePage({ customerId }) {
     setLoading(true);
     setError(null);
     try {
-    const res = await fetch(
-      `${import.meta.env.VITE_API_BASE_URL}/api/customers/${effectiveId}`
-    );
-
-    if (!res.ok)
-      throw new Error(`Server error: ${res.status}`);
-
-    const data = await res.json();
-    setProfile(data);
-  } catch (err) {
+      const data = await apiGet(`/api/customers/${effectiveId}`);
+      setProfile(data);
+    } catch (err) {
       setError(err.message || "Failed to load profile.");
     } finally {
       setLoading(false);
