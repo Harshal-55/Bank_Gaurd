@@ -136,6 +136,7 @@ export function AuthProvider({ children }) {
   };
 
   const value = {
+    isAuthenticated: isLoggedIn,
     isLoggedIn,
     email,
     role,
