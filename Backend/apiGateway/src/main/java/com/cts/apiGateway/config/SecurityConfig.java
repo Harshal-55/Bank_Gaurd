@@ -1,5 +1,6 @@
 package com.cts.apiGateway.config;
 
+import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -11,6 +12,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.web.cors.reactive.CorsConfigurationSource;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import com.cts.apiGateway.security.JwtAuthenticationFilter;
 
@@ -28,6 +30,12 @@ public class SecurityConfig {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.corsConfigurationSource = corsConfigurationSource;
     }
+
+        @Bean
+        @LoadBalanced
+        public WebClient.Builder webClientBuilder() {
+        return WebClient.builder();
+        }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
