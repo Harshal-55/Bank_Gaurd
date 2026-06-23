@@ -23,7 +23,7 @@ async function getLocationFromIP(ip) {
 }
 
 export default function PayPage() {
-  const { email, getToken } = useAuth();
+  const { email, customerId } = useAuth();
 
   const [receiverAccount, setReceiverAccount] = useState("");
   const [amount, setAmount] = useState("");
