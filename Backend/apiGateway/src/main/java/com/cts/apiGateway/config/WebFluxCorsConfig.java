@@ -20,7 +20,7 @@ public class WebFluxCorsConfig {
         
         // Production origins - EXACT MATCH
         corsConfig.addAllowedOrigin("https://bank-gaurd-frontend.vercel.app");
-        corsConfig.addAllowedOrigin("https://bank-gaurd-customer.vercel.app");
+        corsConfig.addAllowedOrigin("https://bank-gaurd-customer-frontend.vercel.app/");
         
         // Methods
         corsConfig.addAllowedMethod("GET");
