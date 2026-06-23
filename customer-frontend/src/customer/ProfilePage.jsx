@@ -1,24 +1,25 @@
 import { useState, useEffect } from "react";
 import { apiGet } from "../services/api";
 
-export default function ProfilePage({ customerId }) {
+export default function ProfilePage({ email }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  if (!customerId) return <div className="text-slate-400 p-8">Loading profile...</div>;
-  const effectiveId = customerId;
+  // if (!customerId) return <div className="text-slate-400 p-8">Loading profile...</div>;
+  // const effectiveId = customerId;
 
   useEffect(() => {
     fetchProfile();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [effectiveId]);
+  }, [email]);
 
   const fetchProfile = async () => {
+    if (!email) return;
     setLoading(true);
     setError(null);
     try {
-      const data = await apiGet(`/api/customers/${effectiveId}`);
+      const data = await apiGet(`/api/customers/email/${email}`);
       setProfile(data);
     } catch (err) {
       setError(err.message || "Failed to load profile.");
