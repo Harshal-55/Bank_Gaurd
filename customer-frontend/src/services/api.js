@@ -30,10 +30,8 @@ export async function apiCall(url, options = {}) {
 
     // If 401, token is expired or invalid - logout user
     if (response.status === 401) {
-      localStorage.removeItem(STORAGE_KEYS.TOKEN);
-      localStorage.removeItem(STORAGE_KEYS.CUSTOMER_EMAIL);
-      localStorage.removeItem(STORAGE_KEYS.CUSTOMER_ROLE);
-      window.location.href = "/login";
+      // Remove the localStorage wipe and window.location.href
+      // Just throw — let the component show an error
       throw new Error("Session expired. Please login again.");
     }
 

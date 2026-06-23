@@ -6,7 +6,8 @@ export default function ProfilePage({ customerId }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const effectiveId = customerId || 1;
+  if (!customerId) return <div className="text-slate-400 p-8">Loading profile...</div>;
+  const effectiveId = customerId;
 
   useEffect(() => {
     fetchProfile();
