@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import com.cts.apiGateway.dto.AuthRequest;
 import com.cts.apiGateway.dto.AuthResponse;
@@ -27,15 +28,18 @@ public class AuthController {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final WebClient webClient;
 
     public AuthController(UserRepository userRepository,
                           PasswordEncoder passwordEncoder,
-                          JwtUtil jwtUtil) {
+                          JwtUtil jwtUtil,
+                          WebClient.Builder webClientBuilder) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
+        // Points to transactionService via Eureka lb://
+        this.webClient = webClientBuilder.baseUrl("http://transactionService").build();
     }
-
     /**
      * Register a new user.
      * SuperAdmin signup is not allowed via this endpoint (seeded in DB).
@@ -162,79 +166,104 @@ public class AuthController {
      * Customer Signup with JWT
      * Creates a new customer account and issues a JWT token
      */
+
     @PostMapping("/customer/signup")
-    public Mono<ResponseEntity<CustomerAuthResponse>> customerSignup(@RequestBody CustomerSignupRequest request) {
-        // Validate email uniqueness
+    public Mono<ResponseEntity<CustomerAuthResponse>> customerSignup(
+            @RequestBody CustomerSignupRequest request) {
+
         return userRepository.findByEmail(request.getEmail())
-                .flatMap(existing -> Mono.just(ResponseEntity.status(HttpStatus.CONFLICT).body(
-                        CustomerAuthResponse.builder()
-                                .message("Email already registered")
-                                .build()
-                )))
+                .flatMap(existing -> Mono.<ResponseEntity<CustomerAuthResponse>>just(
+                        ResponseEntity.status(HttpStatus.CONFLICT).body(
+                                CustomerAuthResponse.builder()
+                                        .message("Email already registered")
+                                        .build())))
                 .switchIfEmpty(
-                        // Also check username if email is used as username
-                        userRepository.save(
-                                User.builder()
-                                        .username(request.getEmail()) // Use email as username
-                                        .email(request.getEmail())
-                                        .password(passwordEncoder.encode(request.getPassword()))
-                                        .role("CUSTOMER")
-                                        .isApproved(true) // Customers are auto-approved
-                                        .bankName(request.getBankName())
-                                        .accountNo(request.getAccountNo())
-                                        .accountType(request.getAccountType())
-                                        .balance(request.getBalance() != null ? request.getBalance() : 0.0)
-                                        .riskScore(0.0)
-                                        .build()
-                        ).map(saved -> {
-                            String token = jwtUtil.generateToken(saved.getUsername(), saved.getRole());
-                            return ResponseEntity.status(HttpStatus.CREATED).body(
-                                    CustomerAuthResponse.builder()
+                    userRepository.save(
+                        User.builder()
+                            .username(request.getEmail())
+                            .email(request.getEmail())
+                            .password(passwordEncoder.encode(request.getPassword()))
+                            .role("CUSTOMER")
+                            .isApproved(true)
+                            .bankName(request.getBankName())
+                            .accountNo(request.getAccountNo())
+                            .accountType(request.getAccountType())
+                            .balance(request.getBalance() != null ? request.getBalance() : 0.0)
+                            .riskScore(0.0)
+                            .build()
+                    ).flatMap(saved -> {
+                        // Also create customer in transactionService
+                        java.util.Map<String, Object> customerPayload = new java.util.HashMap<>();
+                        customerPayload.put("email", saved.getEmail());
+                        customerPayload.put("name", request.getName());
+                        customerPayload.put("bankName", saved.getBankName());
+                        customerPayload.put("accountNo", saved.getAccountNo());
+                        customerPayload.put("accountType", saved.getAccountType());
+                        customerPayload.put("balance", saved.getBalance());
+                        customerPayload.put("riskScore", 0.0);
+                        customerPayload.put("password", request.getPassword()); // plain — transactionService hashes or stores as-is
+
+                        return webClient.post()
+                            .uri("/api/customers")
+                            .bodyValue(customerPayload)
+                            .retrieve()
+                            .bodyToMono(java.util.Map.class)
+                            .onErrorReturn(new java.util.HashMap<>()) // don't fail signup if txn service is down
+                            .map(txnCustomer -> {
+                                Long customerId = txnCustomer.get("customerId") != null
+                                    ? Long.valueOf(txnCustomer.get("customerId").toString())
+                                    : null;
+                                String token = jwtUtil.generateToken(saved.getUsername(), saved.getRole());
+                                return ResponseEntity.status(HttpStatus.CREATED)
+                                        .<CustomerAuthResponse>body(
+                                        CustomerAuthResponse.builder()
                                             .token(token)
                                             .email(saved.getEmail())
                                             .username(saved.getUsername())
-                                            .name(request.getBankName())
+                                            .name(request.getName())
                                             .bankName(saved.getBankName())
                                             .accountNo(saved.getAccountNo())
                                             .accountType(saved.getAccountType())
                                             .balance(saved.getBalance())
                                             .riskScore(saved.getRiskScore())
                                             .role(saved.getRole())
+                                            .customerId(customerId)
                                             .message("Customer account created successfully")
-                                            .build()
-                            );
-                        })
+                                            .build());
+                            });
+                    })
                 );
     }
 
-    /**
-     * Customer Login with JWT
-     * Authenticates customer and issues JWT token
-     */
     @PostMapping("/customer/login")
-    public Mono<ResponseEntity<CustomerAuthResponse>> customerLogin(@RequestBody AuthRequest request) {
-        // Try to find customer by email (assuming email is used as username for customers)
+    public Mono<ResponseEntity<CustomerAuthResponse>> customerLogin(
+            @RequestBody AuthRequest request) {
+
         return userRepository.findByEmail(request.getUsername())
                 .flatMap(user -> {
                     if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-                        return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
-                                CustomerAuthResponse.builder()
-                                        .message("Invalid email or password")
-                                        .build()
-                        ));
+                        return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                                .<CustomerAuthResponse>body(CustomerAuthResponse.builder()
+                                        .message("Invalid email or password").build()));
                     }
-
                     if (!"CUSTOMER".equals(user.getRole())) {
-                        return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
-                                CustomerAuthResponse.builder()
-                                        .message("Invalid credentials")
-                                        .build()
-                        ));
+                        return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                                .<CustomerAuthResponse>body(CustomerAuthResponse.builder()
+                                        .message("Invalid credentials").build()));
                     }
-
-                    String token = jwtUtil.generateToken(user.getUsername(), user.getRole());
-                    return Mono.just(ResponseEntity.ok(
-                            CustomerAuthResponse.builder()
+                    // Fetch customerId from transactionService by email
+                    return webClient.get()
+                        .uri("/api/customers/email/{email}", user.getEmail())
+                        .retrieve()
+                        .bodyToMono(java.util.Map.class)
+                        .onErrorReturn(new java.util.HashMap<>())
+                        .map(txnCustomer -> {
+                            Long customerId = txnCustomer.get("customerId") != null
+                                ? Long.valueOf(txnCustomer.get("customerId").toString())
+                                : null;
+                            String token = jwtUtil.generateToken(user.getUsername(), user.getRole());
+                            return ResponseEntity.ok(
+                                CustomerAuthResponse.builder()
                                     .token(token)
                                     .email(user.getEmail())
                                     .username(user.getUsername())
@@ -244,14 +273,13 @@ public class AuthController {
                                     .balance(user.getBalance())
                                     .riskScore(user.getRiskScore())
                                     .role(user.getRole())
+                                    .customerId(customerId)  // ← from transactionService
                                     .message("Login successful")
-                                    .build()
-                    ));
+                                    .build());
+                        });
                 })
-                .switchIfEmpty(Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
-                        CustomerAuthResponse.builder()
-                                .message("Invalid email or password")
-                                .build()
-                )));
+                .switchIfEmpty(Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(CustomerAuthResponse.builder()
+                                .message("Invalid email or password").build())));
     }
 }
