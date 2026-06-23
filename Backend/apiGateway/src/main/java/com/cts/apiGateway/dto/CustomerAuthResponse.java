@@ -18,4 +18,5 @@ public class CustomerAuthResponse {
     private Double riskScore;
     private String role;
     private String message;
+    private Long customerId; 
 }
