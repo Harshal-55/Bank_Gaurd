@@ -39,7 +39,12 @@
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-gateway-server-webflux</artifactId>
 		</dependency>
-
+		<!-- Already included via spring-cloud-starter-gateway-server-webflux,
+     but add explicitly to be safe -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webflux</artifactId>
+		</dependency>
 		<!-- Dev tools -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

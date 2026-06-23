@@ -23,9 +23,10 @@ export default function TransactionsPage({ customerId }) {
     setLoading(true);
     setError(null);
     try {
-      const endpoint = customerId
-        ? `/api/transactions/customer/${customerId}`
-        : `/api/transactions`;
+      const endpoint = email
+        ? `/api/transactions/customer/email/${email}`
+        : null;
+      if (!endpoint) { setTransactions([]); setLoading(false); return; }
       const data = await apiGet(endpoint);
       setTransactions(Array.isArray(data) ? data : data.transactions || []);
     } catch (err) {

@@ -13,25 +13,16 @@
         <module name="ConfigServer" />
         <module name="transactionService" />
       </profile>
-      <profile name="Annotation profile for sarReport" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="false">
-          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.44/lombok-1.18.44.jar" />
-        </processorPath>
-        <module name="sarReport" />
-        <module name="AlertCaseService" />
-      </profile>
       <profile name="Annotation profile for apiGateway" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="false">
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.44/lombok-1.18.44.jar" />
-          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.44/lombok-1.18.44.jar" />
         </processorPath>
         <module name="apiGateway" />
+        <module name="sarReport" />
+        <module name="AlertCaseService" />
       </profile>
     </annotationProcessing>
   </component>
