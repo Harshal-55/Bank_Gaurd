@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useState } from "react";
 
 const AuthContext = createContext(null);
 
@@ -10,43 +10,19 @@ const STORAGE_KEYS = {
 
 const API_BASE = `${import.meta.env.VITE_API_BASE_URL}/auth/customer`;
 
-// Helper functions to check authentication status
-const isAuthenticated = () => {
-  return !!localStorage.getItem(STORAGE_KEYS.TOKEN);
-};
-
-const getToken = () => {
-  return localStorage.getItem(STORAGE_KEYS.TOKEN);
-};
-
-const getEmail = () => {
-  return localStorage.getItem(STORAGE_KEYS.CUSTOMER_EMAIL);
-};
-
-const getRole = () => {
-  return localStorage.getItem(STORAGE_KEYS.CUSTOMER_ROLE) || "CUSTOMER";
-};
+const getToken = () => localStorage.getItem(STORAGE_KEYS.TOKEN);
+const getEmail = () => localStorage.getItem(STORAGE_KEYS.CUSTOMER_EMAIL);
+const getRole = () => localStorage.getItem(STORAGE_KEYS.CUSTOMER_ROLE) || "CUSTOMER";
 
 export function AuthProvider({ children }) {
-  const [isLoggedIn, setIsLoggedIn] = useState(isAuthenticated());
-  const [email, setEmail] = useState(getEmail());
-  const [role, setRole] = useState(getRole());
-  const [customer, setCustomer] = useState(null); // Store full customer data if needed
+  const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem(STORAGE_KEYS.TOKEN));
+  const [email, setEmail] = useState(getEmail);
+  const [role, setRole] = useState(getRole);
+  const [customer, setCustomer] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Sync state with localStorage
-  useEffect(() => {
-    if (isLoggedIn) {
-      localStorage.setItem(STORAGE_KEYS.TOKEN, getToken());
-      localStorage.setItem(STORAGE_KEYS.CUSTOMER_EMAIL, email || "");
-      localStorage.setItem(STORAGE_KEYS.CUSTOMER_ROLE, role || "CUSTOMER");
-    } else {
-      localStorage.removeItem(STORAGE_KEYS.TOKEN);
-      localStorage.removeItem(STORAGE_KEYS.CUSTOMER_EMAIL);
-      localStorage.removeItem(STORAGE_KEYS.CUSTOMER_ROLE);
-    }
-  }, [isLoggedIn, email, role]);
+  // ❌ NO useEffect — localStorage is managed directly in login/signup/logout below
 
   const signup = async (payload) => {
     setLoading(true);
@@ -56,7 +32,7 @@ export function AuthProvider({ children }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-        credentials: "include", // For CORS with credentials
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -66,7 +42,6 @@ export function AuthProvider({ children }) {
 
       const data = await response.json();
 
-      // Store JWT token and customer info
       localStorage.setItem(STORAGE_KEYS.TOKEN, data.token);
       localStorage.setItem(STORAGE_KEYS.CUSTOMER_EMAIL, data.email);
       localStorage.setItem(STORAGE_KEYS.CUSTOMER_ROLE, data.role || "CUSTOMER");
@@ -94,7 +69,7 @@ export function AuthProvider({ children }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: email_input, password }),
-        credentials: "include", // For CORS with credentials
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -104,7 +79,6 @@ export function AuthProvider({ children }) {
 
       const data = await response.json();
 
-      // Store JWT token and customer info
       localStorage.setItem(STORAGE_KEYS.TOKEN, data.token);
       localStorage.setItem(STORAGE_KEYS.CUSTOMER_EMAIL, data.email);
       localStorage.setItem(STORAGE_KEYS.CUSTOMER_ROLE, data.role || "CUSTOMER");
